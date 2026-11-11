@@ -292,6 +292,12 @@ final class Engine: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     // MARK: 前面に出たとき
 
+    private func insideFollow(_ l: CLLocation) -> Bool {
+        let v = (Prefs.circles["follow"] ?? "").split(separator: ",").compactMap { Double($0) }
+        guard v.count == 3 else { return false }
+        return Logic.dist(l.coordinate.latitude, l.coordinate.longitude, v[0], v[1]) <= v[2]
+    }
+
     func foreground() async {
         await Backfill.run()
         await Sender.shared.flush()
@@ -308,7 +314,11 @@ final class Engine: NSObject, ObservableObject, CLLocationManagerDelegate {
                 return
             }
             if state == 2 { watchdog(); return }
-            if state == 1 { Task { await wake("s", why: "大きな移動") } }
+            if state == 1 {
+                // 届いた位置が追いかけの円の中なら、動いていないので無視する
+                if let l = locations.last, insideFollow(l) { Log.w("大きな移動の知らせ（追いかけの円の中、無視）"); return }
+                Task { await wake("s", why: "大きな移動") }
+            }
         }
     }
 
