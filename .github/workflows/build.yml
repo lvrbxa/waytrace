@@ -23,6 +23,9 @@ jobs:
         run: |
           mkdir Payload
           cp -R build/Build/Products/Release-iphoneos/WayTrace.app Payload/
+          # 仮の署名（owntracks-iosのビルドと同じ。SideStoreが署名し直す）
+          codesign -f -s - Payload/WayTrace.app
+          plutil -p Payload/WayTrace.app/Info.plist | grep -E "CFBundleIcon|CFBundleIdentifier"
           zip -qry WayTrace.ipa Payload
       - uses: actions/upload-artifact@v4
         with:
