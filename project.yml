@@ -1,0 +1,44 @@
+name: WayTrace
+options:
+  bundleIdPrefix: io.github.lvrbxa
+  deploymentTarget:
+    iOS: "27.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  WayTrace:
+    type: application
+    platform: iOS
+    sources: [WayTrace]
+    info:
+      path: WayTrace/Info.plist
+      properties:
+        CFBundleDisplayName: WayTrace
+        UILaunchScreen: {}
+        NSLocationAlwaysAndWhenInUseUsageDescription: 滞在の記録のため、裏でも位置を使います。
+        NSLocationWhenInUseUsageDescription: 滞在の記録のため、位置を使います。
+        NSMotionUsageDescription: 滞在と移動を分けるため、歩数と活動の履歴を使います。
+        UIBackgroundModes: [location]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.lvrbxa.waytrace
+        TARGETED_DEVICE_FAMILY: "1"
+  WayTraceTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [WayTraceTests]
+    dependencies:
+      - target: WayTrace
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  WayTrace:
+    build:
+      targets:
+        WayTrace: all
+    test:
+      targets: [WayTraceTests]

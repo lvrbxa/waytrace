@@ -1,0 +1,30 @@
+name: build
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate project
+        run: brew install xcodegen && xcodegen generate
+      - name: Test (simulator)
+        run: |
+          SIM=$(xcrun simctl list devices available -j | python3 -c 'import json,sys;d=json.load(sys.stdin)["devices"];print(next(x["udid"] for k,v in d.items() if "iOS" in k for x in v if x["name"].startswith("iPhone")))')
+          xcodebuild test -project WayTrace.xcodeproj -scheme WayTrace -destination "id=$SIM" CODE_SIGNING_ALLOWED=NO | tail -40
+          test ${PIPESTATUS[0]} -eq 0
+      - name: Build (unsigned)
+        run: |
+          xcodebuild -project WayTrace.xcodeproj -scheme WayTrace -configuration Release -sdk iphoneos \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build | tail -20
+          test ${PIPESTATUS[0]} -eq 0
+      - name: Package IPA
+        run: |
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/WayTrace.app Payload/
+          zip -qry WayTrace.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WayTrace-ipa
+          path: WayTrace.ipa
