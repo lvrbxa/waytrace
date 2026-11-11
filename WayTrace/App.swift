@@ -19,6 +19,8 @@ struct WayTraceApp: App {
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        let i = Bundle.main.infoDictionary
+        Log.w("WayTrace starting \(i?["CFBundleShortVersionString"] as? String ?? "?").\(i?["CFBundleVersion"] as? String ?? "?")")
         MainActor.assumeIsolated { Engine.shared.start() }
         return true
     }
