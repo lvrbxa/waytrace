@@ -88,11 +88,13 @@ struct WebMap: UIViewRepresentable {
 
     final class Coordinator: NSObject, WKNavigationDelegate {
         var shown = -1
-        func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge) async -> (URLSession.AuthChallengeDisposition, URLCredential?) {
-            guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodHTTPBasic, challenge.previousFailureCount == 0 else {
-                return (.performDefaultHandling, nil)
+        func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge,
+                     completionHandler: @escaping @MainActor @Sendable (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+            guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodHTTPBasic, challenge.previousFailureCount < 2 else {
+                completionHandler(.performDefaultHandling, nil)
+                return
             }
-            return (.useCredential, URLCredential(user: Prefs.user, password: Keychain.password, persistence: .forSession))
+            completionHandler(.useCredential, URLCredential(user: Prefs.user, password: Keychain.password, persistence: .forSession))
         }
     }
 
@@ -107,7 +109,11 @@ struct WebMap: UIViewRepresentable {
     func updateUIView(_ v: WKWebView, context: Context) {
         guard context.coordinator.shown != reload else { return }
         context.coordinator.shown = reload
-        if let u = URL(string: Prefs.url.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/map") { v.load(URLRequest(url: u)) }
+        guard let u = URL(string: Prefs.url.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/map") else { return }
+        var r = URLRequest(url: u)
+        let token = Data("\(Prefs.user):\(Keychain.password)".utf8).base64EncodedString()
+        r.setValue("Basic \(token)", forHTTPHeaderField: "Authorization")
+        v.load(r)
     }
 }
 
