@@ -59,6 +59,10 @@ enum Log {
             try? d.suffix(1_000_000).write(to: Files.log)
         }
     }
+    static func clear() {
+        try? Data().write(to: Files.log)
+        w("ログを消去")
+    }
 }
 
 enum Prefs {

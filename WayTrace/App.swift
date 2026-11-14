@@ -40,6 +40,7 @@ struct StatusView: View {
     @State private var url = Prefs.url
     @State private var user = Prefs.user
     @State private var password = Keychain.password
+    @State private var confirmClear = false
 
     var body: some View {
         NavigationStack {
@@ -56,6 +57,10 @@ struct StatusView: View {
                 }
                 Section("ログ") {
                     ShareLink("ログを書き出す", item: Files.log)
+                    Button("ログを消去", role: .destructive) { confirmClear = true }
+                        .confirmationDialog("消去しますか", isPresented: $confirmClear) {
+                            Button("消去", role: .destructive) { Log.clear() }
+                        }
                 }
                 Section("接続の設定") {
                     TextField("URL", text: $url).textInputAutocapitalization(.never).keyboardType(.URL)
