@@ -161,6 +161,8 @@ final class Engine: NSObject, ObservableObject, CLLocationManagerDelegate {
         guard let a = await measureOne(g), let b = await measureOne(g) else { return }
         if Logic.confirmMove(a, b, k: k, places: places) {
             apply(2, reason: "確認の2点が円の外")
+        } else if state == 1, conn == "w", Logic.insideAny(b, places)?.stop == true {
+            apply(0, reason: "自宅で静止")
         } else if state == 1 {
             await setFollow(b.la, b.lo)
         }
@@ -223,6 +225,7 @@ final class Engine: NSObject, ObservableObject, CLLocationManagerDelegate {
         Log.w("測った点 精度\(Int(fix.ac))m（きっかけ \(g)）歩数 \(fix.st.map(String.init) ?? "取れない")・活動 \(fix.a == nil ? "取れない" : "取れた")")
         let s = Sample(t: t, la: fix.la, lo: fix.lo, ac: fix.ac)
         recent = (recent + [s]).filter { t - $0.t <= 600 }
+        if places.count > Logic.maxCircles { await syncCircles(Prefs.config) } // 測るたびに近い順へ置き直す
         Task { await Sender.shared.flush(); refresh() }
         return s
     }
@@ -259,13 +262,13 @@ final class Engine: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     func syncCircles(_ c: Config) async {
         guard let m = monitor else { return }
-        if c.places.count > 19 { Log.w("場所が19件を超えたので、円を更新しない"); return }
+        let ps = Logic.circlePlaces(c.places, near: recent.max { $0.t < $1.t })
         var cur = Prefs.circles
-        let want = Dictionary(uniqueKeysWithValues: c.places.map { ("p\($0.id)", "\($0.la),\($0.lo),\($0.r)") })
+        let want = Dictionary(uniqueKeysWithValues: ps.map { ("p\($0.id)", "\($0.la),\($0.lo),\($0.r)") })
         for id in cur.keys where id != "follow" && want[id] == nil {
             await m.remove(id); cur[id] = nil
         }
-        for p in c.places {
+        for p in ps {
             let id = "p\(p.id)"
             guard cur[id] != want[id] else { continue }
             await m.add(CLMonitor.CircularGeographicCondition(center: CLLocationCoordinate2D(latitude: p.la, longitude: p.lo), radius: p.r), identifier: id)

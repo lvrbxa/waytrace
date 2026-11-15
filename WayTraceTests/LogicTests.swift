@@ -55,4 +55,13 @@ final class LogicTests: XCTestCase {
         XCTAssertTrue(o["a"] is NSNull)
         XCTAssertNil(o["v"], "速さが無ければ省く")
     }
+
+    func testCirclePlaces() {
+        let many = (0..<21).map { i -> Place in let p = at(Double(i) * 100); return Place(id: i + 1, name: "\(i)", la: p.0, lo: p.1, r: 30, stop: i == 0) }
+        XCTAssertEqual(Logic.circlePlaces(Array(many.prefix(19)), near: nil).count, 19, "19件以下は全部")
+        let far = Logic.circlePlaces(many, near: S(0, 2000)).map(\.id)
+        XCTAssertEqual(far.count, 19)
+        XCTAssertFalse(far.contains(1), "点から遠い場所は外す")
+        XCTAssertTrue(Logic.circlePlaces(many, near: nil).contains(1), "点が無ければ停止の場所から近い順")
+    }
 }

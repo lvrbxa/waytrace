@@ -47,6 +47,15 @@ enum Logic {
 
     static func insideAny(_ s: Sample, _ places: [Place]) -> Place? { places.first { inside(s, $0) } }
 
+    // 置く場所の円。CLMonitorの上限20件から追いかけの円を引いた19件まで。超えたら点（無ければ停止の場所）から近い順
+    static let maxCircles = 19
+    static func circlePlaces(_ places: [Place], near s: Sample?) -> [Place] {
+        guard places.count > maxCircles, let c = s.map({ ($0.la, $0.lo) }) ?? places.first(where: \.stop).map({ ($0.la, $0.lo) }) else {
+            return Array(places.prefix(maxCircles))
+        }
+        return Array(places.sorted { dist(c.0, c.1, $0.la, $0.lo) < dist(c.0, c.1, $1.la, $1.lo) }.prefix(maxCircles))
+    }
+
     // 直近still_secsの精度acc以内の点がstill_n点以上あり、すべて最新の点からstill_m以内
     static func isStill(_ recent: [Sample], now: Int, k: Konst) -> Bool {
         let good = recent.filter { now - $0.t <= k.still_secs && $0.ac <= k.acc }
