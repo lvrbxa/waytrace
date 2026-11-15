@@ -70,6 +70,8 @@ final class Engine: NSObject, ObservableObject, CLLocationManagerDelegate {
         state = s
         Prefs.state = s
         timer?.invalidate(); timer = nil
+        // 円が働く省電力・停止に入るとき、最新の点から近い順に置き直す
+        if s != 2, places.count > Logic.maxCircles { Task { await syncCircles(Prefs.config) } }
         switch s {
         case 2:
             Task { await removeFollow() }
@@ -225,7 +227,6 @@ final class Engine: NSObject, ObservableObject, CLLocationManagerDelegate {
         Log.w("測った点 精度\(Int(fix.ac))m（きっかけ \(g)）歩数 \(fix.st.map(String.init) ?? "取れない")・活動 \(fix.a == nil ? "取れない" : "取れた")")
         let s = Sample(t: t, la: fix.la, lo: fix.lo, ac: fix.ac)
         recent = (recent + [s]).filter { t - $0.t <= 600 }
-        if places.count > Logic.maxCircles { await syncCircles(Prefs.config) } // 測るたびに近い順へ置き直す
         Task { await Sender.shared.flush(); refresh() }
         return s
     }
