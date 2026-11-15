@@ -62,6 +62,6 @@ final class LogicTests: XCTestCase {
         let far = Logic.circlePlaces(many, near: S(0, 2000)).map(\.id)
         XCTAssertEqual(far.count, 19)
         XCTAssertFalse(far.contains(1), "点から遠い場所は外す")
-        XCTAssertTrue(Logic.circlePlaces(many, near: nil).contains(1), "点が無ければ停止の場所から近い順")
+        XCTAssertTrue(Logic.circlePlaces(many, near: nil).map(\.id).contains(1), "点が無ければ停止の場所から近い順")
     }
 }
