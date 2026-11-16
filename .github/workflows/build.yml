@@ -4,11 +4,13 @@ on:
   workflow_dispatch:
 jobs:
   build:
-    runs-on: macos-26
+    runs-on: xcode-27
     steps:
       - uses: actions/checkout@v4
       - name: Generate project
         run: brew install xcodegen && xcodegen generate
+      - name: Download iOS simulator
+        run: xcodebuild -downloadPlatform iOS
       - name: Test (simulator)
         run: |
           SIM=$(xcrun simctl list devices available -j | python3 -c 'import json,sys;d=json.load(sys.stdin)["devices"];print(next(x["udid"] for k,v in d.items() if "iOS" in k for x in v if x["name"].startswith("iPhone")))')
