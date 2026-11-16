@@ -225,7 +225,7 @@ final class Engine: NSObject, ObservableObject, CLLocationManagerDelegate {
         Sender.shared.add(fix)
         if fix.st == nil || fix.a == nil { Backfill.add(fix, from: from) }
         Log.w("測った点 精度\(Int(fix.ac))m（きっかけ \(g)）歩数 \(fix.st.map(String.init) ?? "取れない")・活動 \(fix.a == nil ? "取れない" : "取れた")")
-        let s = Sample(t: t, la: fix.la, lo: fix.lo, ac: fix.ac)
+        let s = Sample(t: t, la: fix.la, lo: fix.lo, ac: fix.ac, st: fix.st)
         recent = (recent + [s]).filter { t - $0.t <= 600 }
         Task { await Sender.shared.flush(); refresh() }
         return s

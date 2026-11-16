@@ -7,6 +7,7 @@ struct Sample: Codable, Equatable {
     var la: Double
     var lo: Double
     var ac: Double
+    var st: Int? = nil  // 前の点からの歩数（取れないときnil）
 }
 
 struct Place: Codable, Equatable {
@@ -56,10 +57,13 @@ enum Logic {
         return Array(places.sorted { dist(c.0, c.1, $0.la, $0.lo) < dist(c.0, c.1, $1.la, $1.lo) }.prefix(maxCircles))
     }
 
-    // 直近still_secsの精度acc以内の点がstill_n点以上あり、すべて最新の点からstill_m以内
+    static let stillSteps = 10
+
+    // 直近still_secsの精度acc以内の点がstill_n点以上あり、すべて最新の点からstill_m以内で、最新の点の歩数がstillSteps以下（取れないときは見ない）
     static func isStill(_ recent: [Sample], now: Int, k: Konst) -> Bool {
         let good = recent.filter { now - $0.t <= k.still_secs && $0.ac <= k.acc }
         guard good.count >= k.still_n, let last = good.max(by: { $0.t < $1.t }) else { return false }
+        guard (last.st ?? 0) <= stillSteps else { return false }
         return good.allSatisfy { dist($0.la, $0.lo, last.la, last.lo) <= k.still_m }
     }
 

@@ -16,6 +16,8 @@ final class LogicTests: XCTestCase {
         XCTAssertFalse(Logic.isStill(Array(pts.prefix(3)), now: 200, k: k), "3点では足りない")
         XCTAssertFalse(Logic.isStill(pts + [S(240, 600)], now: 250, k: k), "最新の点から50mより遠い点がある")
         XCTAssertFalse(Logic.isStill(pts.map { Sample(t: $0.t, la: $0.la, lo: $0.lo, ac: 30) }, now: 200, k: k), "精度20mより悪い点は数えない")
+        XCTAssertFalse(Logic.isStill(pts.dropLast() + [Sample(t: 180, la: pts[3].la, lo: pts[3].lo, ac: 10, st: 38)], now: 200, k: k), "最新の点の歩数が10より多い")
+        XCTAssertTrue(Logic.isStill(pts.dropLast() + [Sample(t: 180, la: pts[3].la, lo: pts[3].lo, ac: 10, st: 10)], now: 200, k: k), "歩数10は静止")
     }
 
     func testNextFromMoving() {
