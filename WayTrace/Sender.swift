@@ -15,9 +15,9 @@ final class Sender {
         Files.save(queue, Files.queue)
     }
 
-    private func request(_ path: String) -> URLRequest? {
+    static func request(_ path: String, timeout: TimeInterval = 10) -> URLRequest? {
         guard !Prefs.url.isEmpty, let u = URL(string: Prefs.url.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + path) else { return nil }
-        var r = URLRequest(url: u, timeoutInterval: 10)
+        var r = URLRequest(url: u, timeoutInterval: timeout)
         let token = Data("\(Prefs.user):\(Keychain.password)".utf8).base64EncodedString()
         r.setValue("Basic \(token)", forHTTPHeaderField: "Authorization")
         return r
@@ -31,7 +31,7 @@ final class Sender {
         defer { sending = false }
         while !queue.isEmpty {
             let batch = Array(queue.prefix(40))
-            guard var r = request("/pub") else { Log.w("送信できない（接続の設定が空）"); return false }
+            guard var r = Self.request("/pub") else { Log.w("送信できない（接続の設定が空）"); return false }
             r.httpMethod = "POST"
             r.setValue("application/json", forHTTPHeaderField: "Content-Type")
             r.httpBody = try? JSONEncoder().encode(batch)
@@ -55,7 +55,7 @@ final class Sender {
     }
 
     func fetchConfig() async {
-        guard let r = request("/config") else { return }
+        guard let r = Self.request("/config") else { return }
         do {
             let (data, resp) = try await URLSession.shared.data(for: r)
             guard (resp as? HTTPURLResponse)?.statusCode == 200 else { Log.w("設定の取得の失敗"); return }

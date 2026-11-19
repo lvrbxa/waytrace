@@ -32,10 +32,10 @@ enum Motion {
         }
     }
 
-    private static func withTimeout<T>(_ op: @escaping () async -> T?) async -> T? {
+    static func withTimeout<T>(seconds: UInt64 = 2, _ op: @escaping () async -> T?) async -> T? {
         await withTaskGroup(of: T?.self) { g in
             g.addTask { await op() }
-            g.addTask { try? await Task.sleep(nanoseconds: 2_000_000_000); return nil }
+            g.addTask { try? await Task.sleep(nanoseconds: seconds * 1_000_000_000); return nil }
             let first = await g.next() ?? nil
             g.cancelAll()
             return first

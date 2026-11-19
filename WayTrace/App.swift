@@ -116,10 +116,7 @@ struct WebMap: UIViewRepresentable {
     func updateUIView(_ v: WKWebView, context: Context) {
         guard context.coordinator.shown != reload else { return }
         context.coordinator.shown = reload
-        guard let u = URL(string: Prefs.url.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/map") else { return }
-        var r = URLRequest(url: u)
-        let token = Data("\(Prefs.user):\(Keychain.password)".utf8).base64EncodedString()
-        r.setValue("Basic \(token)", forHTTPHeaderField: "Authorization")
+        guard let r = Sender.request("/map", timeout: 60) else { return }
         v.load(r)
     }
 }

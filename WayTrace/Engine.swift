@@ -28,7 +28,6 @@ final class Engine: NSObject, ObservableObject, CLLocationManagerDelegate {
     private var lastEvent: [String: Bool] = [:]
     private var collected: [CLLocation] = []
     private var collectCont: CheckedContinuation<CLLocation?, Never>?
-    private var collectAcc: Double = 20
     private var k: Konst { Prefs.config.k }
     private var places: [Place] { Prefs.config.places }
 
@@ -108,13 +107,7 @@ final class Engine: NSObject, ObservableObject, CLLocationManagerDelegate {
         Log.w("外出のショートカット")
         _ = await measureOne("w", at: t)
         apply(2, reason: "外出")
-        _ = await withTaskGroup(of: Bool.self) { g in
-            g.addTask { await Sender.shared.flush() }
-            g.addTask { try? await Task.sleep(nanoseconds: 5_000_000_000); return false }
-            let r = await g.next() ?? false
-            g.cancelAll()
-            return r
-        }
+        _ = await Motion.withTimeout(seconds: 5) { await Sender.shared.flush() }
         refresh()
     }
 
@@ -128,7 +121,7 @@ final class Engine: NSObject, ObservableObject, CLLocationManagerDelegate {
     private func tick() async {
         guard state == 2, !measuring else { return }
         lastMeasured = Date()
-        guard let s = await measureOne("m") else { return }
+        guard await measureOne("m") != nil else { return }
         let now = Int(Date().timeIntervalSince1970)
         switch Logic.nextFromMoving(recent, now: now, k: k, places: places, wifi: conn == "w") {
         case .stop:
@@ -137,7 +130,7 @@ final class Engine: NSObject, ObservableObject, CLLocationManagerDelegate {
             apply(1, reason: "静止")
             if let c = Logic.followCenter(recent, now: now, places: places) { await setFollow(c.0, c.1) }
         case .keep:
-            _ = s
+            break
         }
     }
 
@@ -184,7 +177,6 @@ final class Engine: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     private func collect() async -> CLLocation? {
         collected = []
-        collectAcc = k.acc
         lm.desiredAccuracy = kCLLocationAccuracyBest
         lm.distanceFilter = kCLDistanceFilterNone
         lm.startUpdatingLocation()
@@ -314,7 +306,7 @@ final class Engine: NSObject, ObservableObject, CLLocationManagerDelegate {
         MainActor.assumeIsolated {
             if collectCont != nil {
                 collected += locations
-                if locations.contains(where: { $0.horizontalAccuracy >= 0 && $0.horizontalAccuracy <= collectAcc }) { finishCollect() }
+                if locations.contains(where: { $0.horizontalAccuracy >= 0 && $0.horizontalAccuracy <= k.acc }) { finishCollect() }
                 return
             }
             if state == 2 { watchdog(); return }
